@@ -16,7 +16,7 @@ import {
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { findImageUrlInJson, formatBytes, convertToJpgBlob } from './utils';
+import { findImageUrlInJson, formatBytes, convertToJpgBlob, compressImageIfNecessary } from './utils';
 import { UpscaleSession } from './types';
 
 const _0x4fb81 = [
@@ -25,7 +25,6 @@ const _0x4fb81 = [
   'TmV4YSBEZXY='
 ];
 
-// Simple obfuscated helpe
 const _0xdec3da = (val: string) => {
   try {
     return atob(val);
@@ -61,7 +60,8 @@ export default function App() {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [upscaleProgress, setUpscaleProgress] = useState<number>(0);
   const [isConvertingJpg, setIsConvertingJpg] = useState<boolean>(false);
-  
+  const [showDownloadModal, setShowDownloadModal] = useState<boolean>(false);
+
   const [sliderPosition, setSliderPosition] = useState<number>(50);
   const sliderContainerRef = useRef<HTMLDivElement>(null);
   const [isSliding, setIsSliding] = useState<boolean>(false);
@@ -132,9 +132,11 @@ export default function App() {
     setActiveSession(currentSession);
     setUploadProgress(15);
     
-    try {
+    try { 
+      const fileToUpload = await compressImageIfNecessary(file);
+      
       const formData = new FormData();
-      formData.append("files[]", file);
+      formData.append("files[]", fileToUpload);
 
       const progressTimer = setInterval(() => {
         setUploadProgress((prev) => {
@@ -195,7 +197,7 @@ export default function App() {
       }
 
       const upscaleData = await upscaleResponse.json();
-     
+
       let upscaledUrl = upscaleData?.result?.image_upscaled;
       
       if (!upscaledUrl) {
@@ -272,18 +274,55 @@ export default function App() {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!activeSession) return;
     const downloadUrl = activeSession.convertedJpgUrl || activeSession.upscaledUrl;
     if (!downloadUrl) return;
 
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    const baseName = activeSession.originalName.substring(0, activeSession.originalName.lastIndexOf('.')) || 'image';
-    link.download = `${baseName}_HD.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setShowDownloadModal(true);
+
+    try {
+      let blob: Blob;
+      
+      if (downloadUrl.startsWith('data:')) {
+        const parts = downloadUrl.split(',');
+        const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+        const binary = atob(parts[1]);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          array[i] = binary.charCodeAt(i);
+        }
+        blob = new Blob([array], { type: mime });
+      } else {
+        const response = await fetch(downloadUrl);
+        if (!response.ok) throw new Error("Fetch response not OK");
+        blob = await response.blob();
+      }
+
+      const localBlobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = localBlobUrl;
+      const baseName = activeSession.originalName.substring(0, activeSession.originalName.lastIndexOf('.')) || 'image';
+      link.download = `${baseName}_HD.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        URL.revokeObjectURL(localBlobUrl);
+      }, 5500);
+    } catch (err) {
+      console.warn("Direct blob download failed, falling back to direct anchor open:", err);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.target = '_blank';
+      const baseName = activeSession.originalName.substring(0, activeSession.originalName.lastIndexOf('.')) || 'image';
+      link.download = `${baseName}_HD.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleResetSession = () => {
@@ -320,7 +359,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-gray-800 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* 🚀 Nexa Dev WhatsApp Channel */}
+      {/* 🚀 Nexa Dev  WhatsApp Channel */}
       <AnimatePresence>
         {showPromo && (
           <motion.div 
@@ -738,7 +777,7 @@ export default function App() {
                       {item.originalName}
                     </p>
                     <span className="text-[9px] font-mono text-indigo-200 uppercase font-bold tracking-wider drop-shadow-sm">
-                      Nexa Clean
+                      Nexa HD
                     </span>
                   </div>
                 </div>
@@ -752,7 +791,7 @@ export default function App() {
       {/* Modern Footer (Simple human-centered design) */}
       <footer className="w-full max-w-7xl mx-auto px-8 py-6 border-t border-gray-200 text-center flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-gray-400 font-medium uppercase tracking-[0.2em] bg-white select-none">
         <p>
-          Powered By NexaDev  2026 &bull; 
+          Powered By NexaDev  2026 &bull;
         </p>
         <div className="flex items-center gap-4">
           <a
@@ -766,6 +805,100 @@ export default function App() {
           </a>
         </div>
       </footer>
+
+      {/* 📥 Beautiful Mobile-Optimized Download & Gallery Helper Modal */}
+      <AnimatePresence>
+        {showDownloadModal && activeSession && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
+            {/* Modal Backdrop animation */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 cursor-pointer"
+              onClick={() => setShowDownloadModal(false)}
+            />
+
+            {/* Modal Card Content */}
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl z-10 border border-gray-100 flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-150">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-sm font-bold text-gray-900 leading-none">Gambar Siap Diunduh</h3>
+                    <p className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase tracking-wider">Save directly to your gallery</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDownloadModal(false)}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700"
+                >
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              {/* Scrollable Body content */}
+              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 items-center text-center">
+                
+                {/* Visual guidance info alert */}
+                <div className="flex gap-3 bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4.5 text-left w-full">
+                  <div className="bg-indigo-100 text-indigo-700 h-5 w-5 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">i</div>
+                  <div className="text-xs text-indigo-900 leading-relaxed font-sans">
+                    <p className="font-bold">Tips Simpan ke Galeri / HP:</p>
+                    <p className="mt-1">
+                      Unduhan otomatis telah dijalankan. Jika tidak terunduh otomatis, silakan <strong>tekan lama (hold)</strong> gambar di bawah ini lalu pilih <strong>&quot;Simpan Gambar&quot;</strong> atau <strong>&quot;Download Gambar&quot;</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Main Interactive long-pressable image (No pointer-events-none!) */}
+                <div className="relative border border-gray-200 rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center p-2 max-w-xs group shadow-inner">
+                  <img
+                    src={activeSession.convertedJpgUrl || activeSession.upscaledUrl}
+                    alt="Pristine HD File"
+                    className="max-h-[220px] rounded-lg object-contain cursor-pointer active:scale-98 transition-transform"
+                    referrerPolicy="no-referrer"
+                    title="Tekan lama untuk menyimpan gambar"
+                    style={{ pointerEvents: 'auto' }}
+                  />
+                  <div className="absolute inset-x-0 bottom-3 text-[9px] font-mono text-white bg-black/60 backdrop-blur-sm mx-auto px-2 py-1 rounded w-fit select-none pointer-events-none opacity-80">
+                    💡 TEKAN LAMA UNTUK SIMPAN
+                  </div>
+                </div>
+
+                {/* Filename status bar */}
+                <div className="w-full bg-gray-50 border border-gray-150 py-2.5 px-4 rounded-xl text-left flex items-center justify-between gap-4">
+                  <span className="text-[10px] font-mono font-medium truncate text-gray-500 max-w-[200px]" title={activeSession.originalName}>
+                    {activeSession.originalName.replace(/\.[^/.]+$/, "")}_HD.jpg
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase">
+                    HD image
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer actions */}
+              <div className="bg-gray-50 border-t border-gray-150 p-4.5 flex gap-3">
+                <button
+                  onClick={() => setShowDownloadModal(false)}
+                  className="flex-1 py-2.5 font-bold text-xs sm:text-sm bg-white hover:bg-gray-100 text-gray-700 hover:text-black rounded-xl border border-gray-200 transition-all text-center"
+                >
+                  Selesai
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

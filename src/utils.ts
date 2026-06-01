@@ -59,7 +59,7 @@ export function formatBytes(bytes: number, decimals = 2): string {
 export async function convertToJpgBlob(imageUrl: string): Promise<{ blob: Blob; dataUrl: string }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous'; // request CORS access for canvas manipulation
+    img.crossOrigin = 'anonymous';
     
     img.onload = () => {
       try {
@@ -71,14 +71,13 @@ export async function convertToJpgBlob(imageUrl: string): Promise<{ blob: Blob; 
         if (!ctx) {
           throw new Error('Could not get 2d canvas context');
         }
-
+        
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         ctx.drawImage(img, 0, 0);
-
+        
         const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-
+        
         canvas.toBlob(
           (blob) => {
             if (blob) {
@@ -96,9 +95,9 @@ export async function convertToJpgBlob(imageUrl: string): Promise<{ blob: Blob; 
     };
     
     img.onerror = () => {
-      reject(new Error('Failed to load image for JPEG conversion. This may be due to CORS policies on the hosting site.'));
+      reject(new Error('Failed to load image for JPEG conversion.'));
     };
-
+    
     const cacheBuster = imageUrl.includes('?') ? `&_cb=${Date.now()}` : `?_cb=${Date.now()}`;
     img.src = imageUrl + cacheBuster;
   });

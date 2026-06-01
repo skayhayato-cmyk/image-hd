@@ -1,0 +1,6 @@
+{
+  "name": "Image HD",
+  "description": "Upscale images to pristine high definition (HD) with advanced visual processing. Features fluid drag-drop upload, double-preview comparison, and direct JPEG conversions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

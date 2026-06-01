@@ -86,7 +86,7 @@ async function compressImageIfNecessary(file: File, maxSizeBytes = 1950000): Pro
       };
 
       img.onerror = () => {
-        resolve(file); 
+        resolve(file);
       };
 
       img.src = e.target?.result as string;
@@ -125,7 +125,7 @@ export default function App() {
   });
 
   const [activeSession, setActiveSession] = useState<UpscaleSession | null>(null);
-
+  
   const [history, setHistory] = useState<UpscaleSession[]>(() => {
     try {
       const stored = localStorage.getItem('nexa_upscale_history');
@@ -137,12 +137,12 @@ export default function App() {
 
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [upscaleProgress, setUpscaleProgress] = useState<number>(0);
   const [isConvertingJpg, setIsConvertingJpg] = useState<boolean>(false);
   const [showDownloadModal, setShowDownloadModal] = useState<boolean>(false);
-
+  
   const [sliderPosition, setSliderPosition] = useState<number>(50);
   const sliderContainerRef = useRef<HTMLDivElement>(null);
   const [isSliding, setIsSliding] = useState<boolean>(false);
@@ -150,7 +150,7 @@ export default function App() {
   const saveToHistory = (session: UpscaleSession) => {
     setHistory((prev) => {
       const filtered = prev.filter(item => item.id !== session.id);
-      const updated = [session, ...filtered].slice(0, 10); // keep last 10
+      const updated = [session, ...filtered].slice(0, 10);
       localStorage.setItem('nexa_upscale_history', JSON.stringify(updated));
       return updated;
     });
@@ -274,11 +274,10 @@ export default function App() {
       setUpscaleProgress(95);
 
       if (!upscaleResponse.ok) {
-        throw new Error(`Upscale server returned error status: ${upscaleResponse.status}`);
+        throw new Error(`Upscaling failed: ${upscaleResponse.status}`);
       }
 
       const upscaleData = await upscaleResponse.json();
-
       let upscaledUrl = upscaleData?.result?.image_upscaled;
       
       if (!upscaledUrl) {
@@ -293,7 +292,6 @@ export default function App() {
 
       setUpscaleProgress(100);
 
-      // 3. CONVERT TO JPG & DISPLAY PHASE
       currentSession = { 
         ...currentSession, 
         upscaledUrl: upscaledUrl,
@@ -390,7 +388,7 @@ export default function App() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
+      
       setTimeout(() => {
         URL.revokeObjectURL(localBlobUrl);
       }, 5500);
@@ -441,7 +439,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-gray-800 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Nexa Dev WhatsApp Channel */}
+      {/* 🚀 Nexa Dev Obfuscated WhatsApp Channel Promo Top Bar */}
       <AnimatePresence>
         {showPromo && (
           <motion.div 
@@ -759,7 +757,7 @@ export default function App() {
                           style={{ left: `${sliderPosition}%` }}
                         >
                           <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-700 font-bold text-sm hover:scale-110 active:scale-95 transition-transform">
-                            â†”
+                            ↔
                           </div>
                         </div>
 
@@ -873,7 +871,7 @@ export default function App() {
       {/* Modern Footer (Simple human-centered design) */}
       <footer className="w-full max-w-7xl mx-auto px-8 py-6 border-t border-gray-200 text-center flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-gray-400 font-medium uppercase tracking-[0.2em] bg-white select-none">
         <p>
-          Powered By NexaDev  2026 &bull;
+          Powered By NexaDev  2026 &bull; Clean UI License-Free
         </p>
         <div className="flex items-center gap-4">
           <a
@@ -888,7 +886,7 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Beautiful Mobile-Optimized Download & Gallery Helper Modal */}
+      {/* 📥 Beautiful Mobile-Optimized Download & Gallery Helper Modal */}
       <AnimatePresence>
         {showDownloadModal && activeSession && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
@@ -953,7 +951,7 @@ export default function App() {
                     style={{ pointerEvents: 'auto' }}
                   />
                   <div className="absolute inset-x-0 bottom-3 text-[9px] font-mono text-white bg-black/60 backdrop-blur-sm mx-auto px-2 py-1 rounded w-fit select-none pointer-events-none opacity-80">
-                     TEKAN LAMA UNTUK SIMPAN
+                    💡 TEKAN LAMA UNTUK SIMPAN
                   </div>
                 </div>
 
@@ -983,3 +981,4 @@ export default function App() {
       </AnimatePresence>
     </div>
   );
+}

@@ -21,10 +21,11 @@ import { UpscaleSession } from './types';
 
 const _0x4fb81 = [
   'am9pbiBDaGFubmVsIE5leGEgRGV2',
-  'aHR0cHM6Ly93aGF0c2FwcC5jb20vY2hhbm5lbC8wMDI5VmI3VGtDY0QzOENTdHJBTVliM04=',
+  'aHR0cHM6Ly93aGF0c2FwcC5jb20vY2hhbm5lbC8wMDI5VmI3VGtDY0QzOENTdHJBTU1iM04=',
   'TmV4YSBEZXY='
 ];
 
+// Simple obfuscated helpe
 const _0xdec3da = (val: string) => {
   try {
     return atob(val);
@@ -110,7 +111,6 @@ export default function App() {
     }
   };
 
-  // Initial file selection handler
   const handleFileSelection = (file: File) => {
     const objectUrl = URL.createObjectURL(file);
     
@@ -127,9 +127,7 @@ export default function App() {
     processPipeline(file, newSession);
   };
 
-  // Main conversion pipeline
   const processPipeline = async (file: File, session: UpscaleSession) => {
-    // 1. UPLOAD PHASE
     let currentSession: UpscaleSession = { ...session, status: 'uploading' };
     setActiveSession(currentSession);
     setUploadProgress(15);
@@ -138,7 +136,6 @@ export default function App() {
       const formData = new FormData();
       formData.append("files[]", file);
 
-      // Simulate a bit of smooth progress
       const progressTimer = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 90) {
@@ -169,7 +166,6 @@ export default function App() {
         throw new Error("Could not find image URL in the upload server's response. Please check server status.");
       }
 
-      // Update session with uploaded URL
       currentSession = { 
         ...currentSession, 
         uploadedUrl: extractedUrl, 
@@ -178,8 +174,6 @@ export default function App() {
       setActiveSession(currentSession);
       setUpscaleProgress(10);
 
-      // 2. UPSCALE PHASE
-      // Simulate upscaling stages
       const upscaleTimer = setInterval(() => {
         setUpscaleProgress((prev) => {
           if (prev >= 85) {
@@ -190,7 +184,6 @@ export default function App() {
         });
       }, 400);
 
-      // Call upscale API
       const upscaleApiUrl = `https://api-faa.my.id/faa/hdv4?image=${encodeURIComponent(extractedUrl)}`;
       const upscaleResponse = await fetch(upscaleApiUrl);
 
@@ -202,13 +195,10 @@ export default function App() {
       }
 
       const upscaleData = await upscaleResponse.json();
-      
-      // Expected payload format:
-      // result: { image_upscaled: "..." }
+     
       let upscaledUrl = upscaleData?.result?.image_upscaled;
       
       if (!upscaledUrl) {
-        // Fallback robust search in case format changes slightly
         const found = findImageUrlInJson(upscaleData);
         if (found) {
           upscaledUrl = found;
@@ -261,7 +251,7 @@ export default function App() {
       setActiveSession(currentSession);
     }
   };
-  
+
   const handleSliderMove = (clientX: number) => {
     if (!sliderContainerRef.current) return;
     const rect = sliderContainerRef.current.getBoundingClientRect();
@@ -330,7 +320,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-gray-800 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* 🚀 Nexa Dev WhatsApp Channel*/}
+      {/* 🚀 Nexa Dev WhatsApp Channel */}
       <AnimatePresence>
         {showPromo && (
           <motion.div 
@@ -762,7 +752,7 @@ export default function App() {
       {/* Modern Footer (Simple human-centered design) */}
       <footer className="w-full max-w-7xl mx-auto px-8 py-6 border-t border-gray-200 text-center flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-gray-400 font-medium uppercase tracking-[0.2em] bg-white select-none">
         <p>
-          Powered By NexaDev  2026 &bull; Clean UI License-Free
+          Powered By NexaDev  2026 &bull; 
         </p>
         <div className="flex items-center gap-4">
           <a

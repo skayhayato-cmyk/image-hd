@@ -16,8 +16,89 @@ import {
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { findImageUrlInJson, formatBytes, convertToJpgBlob, compressImageIfNecessary } from './utils';
+import { findImageUrlInJson, formatBytes, convertToJpgBlob } from './utils';
 import { UpscaleSession } from './types';
+
+async function compressImageIfNecessary(file: File, maxSizeBytes = 1950000): Promise<File> {
+  if (file.size <= maxSizeBytes) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+
+        const maxDimension = 2500;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.90;
+        const attemptCompress = () => {
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+
+            if (blob.size <= maxSizeBytes || quality <= 0.4) {
+              const originalBaseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'image';
+              const fileExtension = '.jpg';
+              const newFileName = `${originalBaseName}_compressed${fileExtension}`;
+              
+              const compressedFile = new File([blob], newFileName, {
+                type: blob.type,
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            } else {
+              quality -= 0.10;
+              attemptCompress();
+            }
+          }, 'image/jpeg', quality);
+        };
+
+        attemptCompress();
+      };
+
+      img.onerror = () => {
+        resolve(file); 
+      };
+
+      img.src = e.target?.result as string;
+    };
+
+    reader.onerror = () => {
+      resolve(file);
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
 
 const _0x4fb81 = [
   'am9pbiBDaGFubmVsIE5leGEgRGV2',
@@ -44,7 +125,7 @@ export default function App() {
   });
 
   const [activeSession, setActiveSession] = useState<UpscaleSession | null>(null);
-  
+
   const [history, setHistory] = useState<UpscaleSession[]>(() => {
     try {
       const stored = localStorage.getItem('nexa_upscale_history');
@@ -56,7 +137,7 @@ export default function App() {
 
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [upscaleProgress, setUpscaleProgress] = useState<number>(0);
   const [isConvertingJpg, setIsConvertingJpg] = useState<boolean>(false);
@@ -132,7 +213,7 @@ export default function App() {
     setActiveSession(currentSession);
     setUploadProgress(15);
     
-    try { 
+    try {
       const fileToUpload = await compressImageIfNecessary(file);
       
       const formData = new FormData();
@@ -212,6 +293,7 @@ export default function App() {
 
       setUpscaleProgress(100);
 
+      // 3. CONVERT TO JPG & DISPLAY PHASE
       currentSession = { 
         ...currentSession, 
         upscaledUrl: upscaledUrl,
@@ -359,7 +441,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-gray-800 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* 🚀 Nexa Dev  WhatsApp Channel */}
+      {/* Nexa Dev WhatsApp Channel */}
       <AnimatePresence>
         {showPromo && (
           <motion.div 
@@ -677,7 +759,7 @@ export default function App() {
                           style={{ left: `${sliderPosition}%` }}
                         >
                           <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-700 font-bold text-sm hover:scale-110 active:scale-95 transition-transform">
-                            ↔
+                            â†”
                           </div>
                         </div>
 
@@ -777,7 +859,7 @@ export default function App() {
                       {item.originalName}
                     </p>
                     <span className="text-[9px] font-mono text-indigo-200 uppercase font-bold tracking-wider drop-shadow-sm">
-                      Nexa HD
+                      Nexa Clean
                     </span>
                   </div>
                 </div>
@@ -806,7 +888,7 @@ export default function App() {
         </div>
       </footer>
 
-      {/* 📥 Beautiful Mobile-Optimized Download & Gallery Helper Modal */}
+      {/* Beautiful Mobile-Optimized Download & Gallery Helper Modal */}
       <AnimatePresence>
         {showDownloadModal && activeSession && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
@@ -871,7 +953,7 @@ export default function App() {
                     style={{ pointerEvents: 'auto' }}
                   />
                   <div className="absolute inset-x-0 bottom-3 text-[9px] font-mono text-white bg-black/60 backdrop-blur-sm mx-auto px-2 py-1 rounded w-fit select-none pointer-events-none opacity-80">
-                    💡 TEKAN LAMA UNTUK SIMPAN
+                     TEKAN LAMA UNTUK SIMPAN
                   </div>
                 </div>
 
@@ -901,4 +983,3 @@ export default function App() {
       </AnimatePresence>
     </div>
   );
-}
